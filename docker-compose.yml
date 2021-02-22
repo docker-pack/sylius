@@ -1,0 +1,30 @@
+version: '3'
+services:
+  php:
+    build: .docker/php
+    container_name: ${COMPOSE_PROJECT_NAME}_php
+    volumes:
+      - ./shop:/var/www:cached
+    ports:
+      - ${APACHE_PORT_OUTSIDE_DOCKER}:80
+    networks:
+      - net
+    environment:
+      APP_ENV: ${APP_ENV:-prod}
+      UID: ${HOST_UID:-4000}
+      WITH_XDEBUG: ${WITH_XDEBUG:-0}
+      WITH_OPCACHE: ${WITH_OPCACHE:-0}
+      DATABASE_URL: ${DATABASE_URL:-0}
+      XDEBUG_CONFIG: remote_host=172.41.0.1
+  gotemberg:
+    container_name:  ${COMPOSE_PROJECT_NAME}_gotemberg
+    image: thecodingmachine/gotenberg:6.2
+    networks:
+      - net
+networks:
+  net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: ${DOCKER_SUBNET}

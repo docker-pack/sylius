@@ -1,0 +1,21 @@
+version: '3'
+services:
+  php:
+    links:
+      - mysql:db
+    depends_on:
+      - mysql
+
+  mysql:
+    image: percona:5.7
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD:-nopassword}
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_USER=${DB_USERNAME}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-nopassword}
+    #volumes:
+      #- ./data:/var/lib/mysql:cached
+      # you may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
+      # - ./docker/mysql/data:/var/lib/mysql:rw,delegated
+    ports:
+      - "3306:3306"
