@@ -1,6 +1,6 @@
 {
     "aeon-php/calendar": {
-        "version": "0.15.0"
+        "version": "0.16.1"
     },
     "akeneo/phpspec-skip-example-extension": {
         "version": "v3.0.0"
@@ -640,9 +640,6 @@
     "sylius-labs/polyfill-symfony-security": {
         "version": "v1.0.0"
     },
-    "sylius/bootstrap-theme": {
-        "version": "v0.1.2"
-    },
     "sylius/fixtures-bundle": {
         "version": "v1.4.1"
     },
@@ -1047,9 +1044,6 @@
     },
     "zendframework/zend-eventmanager": {
         "version": "3.2.1"
-    },
-    "zendframework/zend-hydrator": {
-        "version": "2.4.0"
     },
     "zendframework/zend-stdlib": {
         "version": "3.2.0"

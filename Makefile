@@ -12,9 +12,6 @@ PROJECT_NAME=$(shell grep ^COMPOSE_PROJECT_NAME ./.env | cut -d '=' -f 2-)
 DB_NAME=$(shell grep ^DB_NAME= ./.env | cut -d '=' -f 2-)
 DB_USER=$(shell grep ^DB_USERNAME= ./.env | cut -d '=' -f 2-)
 APP_ENV=$(shell grep ^APP_ENV= ./.env | cut -d '=' -f 2-)
-WITH_RESET_DB=$(shell grep ^WITH_RESET_DB ./.env | cut -d '=' -f 2-)
-YARN_CONTAINER_NAME= $(PROJECT_NAME)_yarn
-ENCORE_COMMAND="./node_modules/.bin/encore dev"
 DOCKER_EXEC_CMD=$(DOCKER_COMPOSE) exec
 .DEFAULT_GOAL := help
 ARGUMENT=$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS)) #split argument from make
@@ -78,10 +75,6 @@ cacheClear: ## Clear symfony cache
 
 ## —— Front 🎨 ———————————————————————————————————————————————————————————————
 
-routesJSGenerate: ## Regenerate routes file for ajax call
-		$(DOCKER_EXEC_CMD) php ./bashrun.sh extractjs
-		$(DOCKER_EXEC_CMD) php ./bashrun.sh uploadfolders
-
 yarnInstall: ## Reinstall node_modules
 		$(DOCKER_EXEC_CMD) php yarn install
 
@@ -108,35 +101,7 @@ migrateDB:  ## Execute a migration to a specified version or the latest availabl
 
 
 executeDB:  ## Execute a single migration version up or down manually, Example make executeDB 20200406202523 down.
-	$(DOCKER_EXEC_CMD) php ./bashrun.sh executeDB $(ARGUMENT)
-
-
-dbReset:
-	$(DOCKER_EXEC_CMD) -u postgres postgis psql -d $(DB_NAME) -c "CREATE EXTENSION postgis CASCADE;"
-	$(DOCKER_EXEC_CMD) -u postgres postgis psql -d $(DB_NAME) -c "CREATE EXTENSION postgis_topology CASCADE;"
-	$(DOCKER_EXEC_CMD) -u postgres postgis psql -d $(DB_NAME) -c "SET search_path = public, postgis;"
-
-
-
-ifeq ($(WITH_RESET_DB), 1)
-ifeq ($(WITH_DB), 1)
-resetDB: destroyDB dbReset updateDB ## Reset everything in database
-else
-resetDB:
-	@echo "This is not your DB can't reset"
-endif
-else
-resetDB: updateDB
-endif
-
-
-ifeq ($(WITH_RESET_DB), 1)
-destroyDB:
-	$(DOCKER_EXEC_CMD) php ./bashrun.sh destroycreatedb
-else
-destroyDB:
-	@echo "can't destroyDB"
-endif
+	$(DOCKER_EXEC_CMD) php ./bashrun.sh executeDB $(ARGUMENT
 
 ## —— Usefull 🧐 ———————————————————————————————————————————————————————————————
 

@@ -4,7 +4,7 @@ services:
     build: .docker/php
     container_name: ${COMPOSE_PROJECT_NAME}_php
     volumes:
-      - ./backend:/var/www:cached
+      - ./sylius:/var/www:cached
     ports:
       - ${APACHE_PORT_OUTSIDE_DOCKER}:80
     networks:
