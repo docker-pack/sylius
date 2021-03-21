@@ -4,7 +4,7 @@ services:
     build: .docker/php
     container_name: ${COMPOSE_PROJECT_NAME}_php
     volumes:
-      - ./sylius:/var/www:cached
+      - ${PROJECT_PATH_OUTSIDE_DOCKER:-./}:/var/www:cached
     ports:
       - ${APACHE_PORT_OUTSIDE_DOCKER}:80
     networks:
@@ -16,11 +16,6 @@ services:
       WITH_OPCACHE: ${WITH_OPCACHE:-0}
       DATABASE_URL: ${DATABASE_URL:-0}
       XDEBUG_CONFIG: remote_host=172.41.0.1
-  gotemberg:
-    container_name:  ${COMPOSE_PROJECT_NAME}_gotemberg
-    image: thecodingmachine/gotenberg:6.2
-    networks:
-      - net
 networks:
   net:
     driver: bridge

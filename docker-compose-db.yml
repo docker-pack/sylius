@@ -5,7 +5,6 @@ services:
       - mysql:db
     depends_on:
       - mysql
-
   mysql:
     image: percona:5.7
     environment:

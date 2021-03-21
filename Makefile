@@ -9,8 +9,6 @@ COMPOSE_FILE_PATH := $(COMPOSE_FILE_PATH) -f docker-compose-db.yml
 endif
 
 PROJECT_NAME=$(shell grep ^COMPOSE_PROJECT_NAME ./.env | cut -d '=' -f 2-)
-DB_NAME=$(shell grep ^DB_NAME= ./.env | cut -d '=' -f 2-)
-DB_USER=$(shell grep ^DB_USERNAME= ./.env | cut -d '=' -f 2-)
 APP_ENV=$(shell grep ^APP_ENV= ./.env | cut -d '=' -f 2-)
 DOCKER_EXEC_CMD=$(DOCKER_COMPOSE) exec
 .DEFAULT_GOAL := help
@@ -30,15 +28,32 @@ afterBuild: #vendorInstall resetDB reloadAssets ## Remove and reinstall the vend
 update: updateDB reloadAssets ## Update vendor, database, and rebuild assets
 
 
-checkConfigFile: ## Check your config file
+checkSetup: ## Check your setup folder
 ifeq (,$(wildcard ./.env)) #if no .env
 		@cp .env.dist .env
 		@echo 'We have just generate a .env file for you'
 		@echo 'Please configure this new .env'
 		@exit 1;
 endif
+ifeq ($(BACKSRC), ./)
+		@echo 'Install a new project'
+		sed -i 's/^PROJECT_PATH_OUTSIDE_DOCKER.*/PROJECT_PATH_OUTSIDE_DOCKER=.\/sylius/' .env || \
+		sed -i '1 i\PROJECT_PATH_OUTSIDE_DOCKER=.\/sylius' .env
+		$(DOCKER_COMPOSE) build
+		$(DOCKER_COMPOSE) up -d
+		@sleep 3
+		$(DOCKER_EXEC_CMD) php composer create-project sylius/sylius-standard $(BACKSRC)
+		$(DOCKER_COMPOSE) stop
+		$(DOCKER_COMPOSE) up -d
+		@sleep 3
+		$(DOCKER_EXEC_CMD) php php bin/console sylius:install
+		$(DOCKER_EXEC_CMD) php yarn install
+		$(DOCKER_EXEC_CMD) php yarn build
+		@exit 1;
+endif
 
-install: checkConfigFile destroy buildImage start afterBuild ## Check config files, destroy, rebuild, start containers, and do afterbuild
+
+install: checkSetup destroy buildImage start afterBuild ## Check config files, destroy, rebuild, start containers, and do afterbuild
 
 deploy: yarnDev updateDB  cacheClear restart ## update preproduction/production env
 
@@ -81,15 +96,13 @@ yarnInstall: ## Reinstall node_modules
 yarnAdd: ## Add a package (node_modules) to assets
 		$(DOCKER_EXEC_CMD) php yarn add --dev $(ARGUMENT)
 
-yarnDev: routesJSGenerate ## build assets
-		$(DOCKER_EXEC_CMD) php yarn dev
+yarnBuild: ## build assets
+		$(DOCKER_EXEC_CMD) php yarn build
 
-watchAssets: routesJSGenerate ## Watch assets
+watchAssets: ## Watch assets
 		$(DOCKER_EXEC_CMD) php yarn watch
 
-reloadAssets:	YARN_CMD = yarn dev ## Rebuild assets
-
-reloadAssets: yarnInstall yarnInstall yarnDev
+reloadAssets: yarnInstall yarnInstall yarnBuild ## Rebuild assets
 
 ## —— Database 🏢 ———————————————————————————————————————————————————————————————
 
@@ -101,7 +114,7 @@ migrateDB:  ## Execute a migration to a specified version or the latest availabl
 
 
 executeDB:  ## Execute a single migration version up or down manually, Example make executeDB 20200406202523 down.
-	$(DOCKER_EXEC_CMD) php ./bashrun.sh executeDB $(ARGUMENT
+	$(DOCKER_EXEC_CMD) php ./bashrun.sh executeDB $(ARGUMENT)
 
 ## —— Usefull 🧐 ———————————————————————————————————————————————————————————————
 
