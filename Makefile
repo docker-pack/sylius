@@ -23,10 +23,6 @@ DOCKER_COMPOSE=@docker-compose $(COMPOSE_FILE_PATH)
 ## —— ComposedCommand 🚀 ———————————————————————————————————————————————————————————————
 buildProject: install ## Alias for install
 
-afterBuild: #vendorInstall resetDB reloadAssets ## Remove and reinstall the vendors, destroy and recreate database, rebuild assets
-
-update: updateDB reloadAssets ## Update vendor, database, and rebuild assets
-
 
 checkSetup: ## Check your setup folder
 ifeq (,$(wildcard ./.env)) #if no .env
@@ -41,21 +37,22 @@ ifeq ($(BACKSRC), ./)
 		sed -i '1 i\PROJECT_PATH_OUTSIDE_DOCKER=.\/sylius' .env
 		$(DOCKER_COMPOSE) build
 		$(DOCKER_COMPOSE) up -d
-		@sleep 3
+		@sleep 5
 		$(DOCKER_EXEC_CMD) php composer create-project sylius/sylius-standard $(BACKSRC)
 		$(DOCKER_COMPOSE) stop
 		$(DOCKER_COMPOSE) up -d
-		@sleep 3
+		@sleep 5
 		$(DOCKER_EXEC_CMD) php php bin/console sylius:install
 		$(DOCKER_EXEC_CMD) php yarn install
 		$(DOCKER_EXEC_CMD) php yarn build
+		$(DOCKER_EXEC_CMD) php chmod -R 777 /var/www
 		@exit 1;
 endif
 
 
-install: checkSetup destroy buildImage start afterBuild ## Check config files, destroy, rebuild, start containers, and do afterbuild
+install: checkSetup destroy buildImage start ## Check config files, destroy, rebuild, start containers, and do afterbuild
 
-deploy: yarnDev updateDB  cacheClear restart ## update preproduction/production env
+deploy: yarnBuild cacheClear restart ## update preproduction/production env
 
 ## —— Docker 🐳 ———————————————————————————————————————————————————————————————
 
@@ -79,13 +76,15 @@ buildImage: ## Build the containers
 ## —— Vendors 🧙‍️ ———————————————————————————————————————————————————————————————
 
 vendorInstall: ## Remove and reinstall the vendors
-		$(DOCKER_EXEC_CMD) php ./bashrun.sh vendorinstall
+		$(DOCKER_EXEC_CMD) php rm -rf vendor
+		$(DOCKER_EXEC_CMD) php composer install
 
 vendorUpdate: ## Remove and update the vendors
-		$(DOCKER_EXEC_CMD) php ./bashrun.sh vendorUpdate
+		$(DOCKER_EXEC_CMD) php rm -rf vendor
+		$(DOCKER_EXEC_CMD) php composer update
 
 cacheClear: ## Clear symfony cache
-		$(DOCKER_EXEC_CMD) php ./bashrun.sh clearcache
+		$(DOCKER_EXEC_CMD) php php bin/console c:c
 
 
 ## —— Front 🎨 ———————————————————————————————————————————————————————————————
@@ -102,19 +101,12 @@ yarnBuild: ## build assets
 watchAssets: ## Watch assets
 		$(DOCKER_EXEC_CMD) php yarn watch
 
-reloadAssets: yarnInstall yarnInstall yarnBuild ## Rebuild assets
+reloadAssets: yarnInstall yarnBuild ## Rebuild assets
 
 ## —— Database 🏢 ———————————————————————————————————————————————————————————————
 
-updateDB:  ## Update the database
-		$(DOCKER_EXEC_CMD) php ./bashrun.sh updatedb
-
-migrateDB:  ## Execute a migration to a specified version or the latest available version.
-		$(DOCKER_EXEC_CMD) php ./bashrun.sh migrateDB $(ARGUMENT)
-
-
-executeDB:  ## Execute a single migration version up or down manually, Example make executeDB 20200406202523 down.
-	$(DOCKER_EXEC_CMD) php ./bashrun.sh executeDB $(ARGUMENT)
+syliusInstall:  ## Install sylius with demo data
+		$(DOCKER_EXEC_CMD) php php bin/console sylius:install
 
 ## —— Usefull 🧐 ———————————————————————————————————————————————————————————————
 
@@ -129,6 +121,5 @@ endif
 help: ## Outputs this help screen
 		@grep -E '(^[a-zA-Z0-9_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}{printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
 		@echo ""
-		@echo "In case you want to build with db, just change \033[32mWITH_DB=1\033[0m in .env"
 		@echo "Make sure you are in the docker groups, give the repo's right to this group (read and write)"
 		@echo ""

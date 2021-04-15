@@ -1,11 +1,9 @@
 ARG PHP_VERSION=7.4.3
-FROM php:${PHP_VERSION}-apache AS super7_php
-ARG WITH_XDEBUG=${WITH_XDEBUG:-}
+FROM php:${PHP_VERSION}-apache AS sylius_php
 ARG WITH_OPCACHE=${WITH_OPCACHE:-}
 
-LABEL Description="ILEOTECH Super7 " \
-      Licence="ILEOTECH" \
-      maintainer="Abderrahman <abderrahman-ext@ileotech.com>"
+LABEL Description="Sylius Easy installer " \
+      maintainer="DAIF Abderrhaman <daif.abderrahman@gmail.com>"
 
 # Install all dependencies
 RUN apt-get update && apt-get upgrade -y apt-utils && \
@@ -102,10 +100,6 @@ RUN pecl install imagick; \
 	docker-php-ext-install bcmath; \
 	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
 	rm -rf /var/lib/apt/lists/*;
-#RUN yes | pecl install xdebug \
-#    && echo "zend_extension=$(find /usr/local/lib/php/extensions/ -name xdebug.so)" > /usr/local/etc/php/conf.d/xdebug.ini \
-#    && echo "xdebug.remote_enable=on" >> /usr/local/etc/php/conf.d/xdebug.ini \
-#    && echo "xdebug.remote_autostart=off" >> /usr/local/etc/php/conf.d/xdebug.ini
 
 ### apcu
 RUN if [ "$WITH_OPCACHE" == "1" ]; \
@@ -127,8 +121,6 @@ RUN echo 'Header always set Access-Control-Allow-Headers "x-requested-with, Cont
 #override some php configurations
 COPY php.ini /usr/local/etc/php/php.ini
 COPY opcache.ini /etc/php/${PHP_VERSION}/conf.d/opcache.ini
-#COPY apcu.ini /etc/php/${PHP_VERSION}/conf.d/apcu.ini
-#COPY xdebug.ini  /etc/php/${PHP_VERSION}/xdebug.ini
 
 COPY 000-default.conf  /etc/apache2/sites-enabled/000-default.conf
 
